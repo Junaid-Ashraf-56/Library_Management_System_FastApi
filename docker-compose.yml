@@ -13,9 +13,9 @@ services:
     image: postgres:17
     container_name: library_postgres
     environment:
-        POSTGRES_DB: library_db
-        POSTGRES_USER: library_user
-        POSTGRES_PASSWORD: library_pass
+        POSTGRES_DB: ${db}
+        POSTGRES_USER: ${user}
+        POSTGRES_PASSWORD: ${pass}
     ports:
         - "5433:5432"
     volumes:
