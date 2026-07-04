@@ -5,7 +5,7 @@ services:
     ports:
       - "8000:8000"
     environment:
-      DATABASE_URL: postgresql://library_user:12345678@postgres:5432/library_db
+      DATABASE_URL: ${DATABASE_URL}
     depends_on:
       - postgres
 
@@ -13,11 +13,9 @@ services:
     image: postgres:17
     container_name: library_postgres
     environment:
-        POSTGRES_DB: ${db}
-        POSTGRES_USER: ${user}
-        POSTGRES_PASSWORD: ${pass}
-    ports:
-        - "5433:5432"
+        POSTGRES_DB: ${POSTGRES_DB}
+        POSTGRES_USER: ${POSTGRES_USER}
+        POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
         - postgres_data:/var/lib/postgresql/data
 
