@@ -10,8 +10,22 @@ on:
       - main
 
 jobs:
-  lint:
+  verify:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: ${POSTGRES_DB}
+          POSTGRES_USER: ${POSTGRES_USER}
+          POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U library_user -d library_management_fast_api"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
 
     steps:
       - uses: actions/checkout@v4
@@ -23,3 +37,8 @@ jobs:
 
       - name: Lint
         run: uv run ruff check .
+
+      - name: Test
+        env:
+          DATABASE_URL: ${DATABASE_URL}
+        run: uv run pytest
