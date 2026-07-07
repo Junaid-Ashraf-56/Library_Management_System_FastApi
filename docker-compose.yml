@@ -29,3 +29,14 @@ services:
 
 volumes:
   postgres_data:
+
+
+#uvicon | multi threaded
+#probelm
+#solution
+#pros and cons
+#alternative
+
+
+#Git Bucket
+#Git Lab

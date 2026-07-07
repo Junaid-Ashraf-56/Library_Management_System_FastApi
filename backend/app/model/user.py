@@ -1,7 +1,7 @@
 from sqlalchemy import Integer, String, Enum
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.repository.database import Base
+from backend.app.repository.database import Base
 from app.model.enums import UserRole
 
 
