@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
+from fastapi import HTTPException
 
 from sqlalchemy.exc import IntegrityError
 
 from app.repository.database import SessionLocal
 from app.repository import library_repository as repository
-
+from app.auth import  password as password_auth
 
 class LibraryError(Exception):
     pass
@@ -30,9 +31,9 @@ def add_book(
     stock: int,
 ):
     if stock < 0:
-        raise ValidationError("Stock cannot be negative.")
+        raise HTTPException(status_code=400,detail="Stock cannot be negative.")
     if price < 0:
-        raise ValidationError("Price cannot be negative.")
+        raise HTTPException(status_code=400,detail="Price cannot be negative.")
 
     db = SessionLocal()
     try:
@@ -81,14 +82,15 @@ def remove_book(book_id: int) -> None:
         removed = repository.remove_book(db, book_id)
 
         if not removed:
-            raise NotFoundError(f"No book exists with id {book_id}.")
+            raise HTTPException(status_code=404,detail=f"No book exists with id {book_id}.")
 
         db.commit()
 
     except IntegrityError as exc:
         db.rollback()
-        raise ValidationError(
-            "Cannot remove a book that is referenced by loan history."
+        raise HTTPException(
+            status_code=409,
+            detail="Cannot remove a book that is referenced by loan history."
         ) from exc
 
     except Exception:
@@ -113,7 +115,7 @@ def register_user(
             name=name,
             email=email,
             phone_number=phone_number,
-            password=password,
+            password=password_auth.hash_password(password)
         )
 
         db.commit()
@@ -123,7 +125,10 @@ def register_user(
 
     except IntegrityError as exc:
         db.rollback()
-        raise ValidationError(f"A user already uses {email}.") from exc
+        raise HTTPException(
+            status_code=409,
+            detail=f"A user already uses {email}."
+        ) from exc
 
     except Exception:
         db.rollback()
@@ -140,22 +145,22 @@ def loan_book(
     days: int,
 ):
     if days < 1:
-        raise ValidationError("Loan length must be at least one day.")
+        raise HTTPException(status_code=400, detail="Loan length must be at least one day.")
 
     db = SessionLocal()
     try:
         book = repository.get_book_for_update(db, book_id)
 
         if book is None:
-            raise NotFoundError(f"No book exists with id {book_id}.")
+            raise HTTPException(status_code=404,detail=f"No book exists with id {book_id}.")
 
         if book.stock <= 0:
-            raise ValidationError(f"'{book.title}' is currently out of stock.")
+            raise HTTPException(status_code=404,detail=f"'{book.title}' is currently out of stock.")
 
         member = repository.get_member(db, member_id)
 
         if member is None:
-            raise NotFoundError(f"No user exists with id {member_id}.")
+            raise HTTPException(status_code=404,detail=f"No user exists with id {member_id}.")
         
         due_date = datetime.now(UTC) + timedelta(days=days)
 
@@ -187,7 +192,7 @@ def return_book(loan_id: int):
         loan = repository.get_active_loan_for_update(db, loan_id)
 
         if loan is None:
-            raise NotFoundError(f"No active loan exists with id {loan_id}.")
+            raise HTTPException(status_code=404,detail=f"No active loan exists with id {loan_id}.")
 
         returned_at = datetime.now(UTC)
 
