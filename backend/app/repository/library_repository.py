@@ -7,7 +7,7 @@ from app.model.book import Book
 from app.model.user import User
 from app.model.loan import Loan
 from app.model.enums import UserRole, LoanStatus
-
+from sqlalchemy import select
 
 def add_book(
     db: Session,
@@ -39,6 +39,10 @@ def list_books(db: Session) -> list[type[Book]]:
     return db.query(Book).order_by(Book.book_id).all()
 
 
+def get_book(db: Session, book_id: int) -> Book | None:
+    return db.get(Book, book_id)
+
+
 def search_books(db: Session, query: str) -> list[type[Book]]:
     pattern = f"%{query}%"
 
@@ -68,6 +72,25 @@ def remove_book(db: Session, book_id: int) -> bool:
     return True
 
 
+def update_book(
+    db: Session,
+    book_id: int,
+    **book_data,
+) -> Book | None:
+    book = db.get(Book, book_id)
+
+    if book is None:
+        return None
+
+    for field, value in book_data.items():
+        setattr(book, field, value)
+
+    db.flush()
+    db.refresh(book)
+
+    return book
+
+
 def get_book_for_update(db: Session, book_id: int) -> type[Book] | None:
     return (
         db.query(Book)
@@ -84,13 +107,14 @@ def register_user(
     email: str,
     phone_number: str,
     password: str,
+    role: UserRole = UserRole.MEMBER,
 ) -> User:
     user = User(
         name=name,
         email=email,
         phone_number=phone_number,
         password=password,
-        role=UserRole.MEMBER,
+        role=role,
     )
 
     db.add(user)
@@ -98,6 +122,14 @@ def register_user(
     db.refresh(user)
 
     return user
+
+def get_user_by_email(db: Session, email: str) -> User | None:
+    statement = select(User).where(User.email == email)
+    return db.scalar(statement)
+
+
+def count_librarians(db: Session) -> int:
+    return db.query(User).filter(User.role == UserRole.LIBRARIAN).count()
 
 
 def get_member(db: Session, member_id: int) -> type[User] | None:
@@ -176,10 +208,18 @@ def mark_loan_returned(
     return loan
 
 
-def list_loans(db: Session, *, active_only: bool = False) -> list[type[Loan]]:
+def list_loans(
+    db: Session,
+    *,
+    active_only: bool = False,
+    member_id: int | None = None,
+) -> list[type[Loan]]:
     query = db.query(Loan).join(Book).join(User)
 
     if active_only:
         query = query.filter(Loan.status == LoanStatus.BORROWED)
+
+    if member_id is not None:
+        query = query.filter(Loan.member_id == member_id)
 
     return query.order_by(Loan.loan_id).all()
