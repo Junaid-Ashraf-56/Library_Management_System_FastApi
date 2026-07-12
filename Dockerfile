@@ -4,11 +4,9 @@ WORKDIR /app
 
 RUN pip install uv
 
-COPY pyproject.toml uv.lock ./
+COPY . .
 
 RUN uv sync --frozen
-
-COPY . .
 
 EXPOSE 8000
 

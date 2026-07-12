@@ -1,11 +1,93 @@
-# Test your FastAPI endpoints
+@baseUrl = http://127.0.0.1:8000
+@token = paste-login-token-here
 
-GET http://127.0.0.1:8000/
+### Health
+GET {{baseUrl}}/
 Accept: application/json
 
-###
+### Register member
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
 
-GET http://127.0.0.1:8000/hello/User
+{
+  "name": "Ayesha Khan",
+  "email": "ayesha@example.com",
+  "phone_number": "555-0101",
+  "password": "secret123"
+}
+
+### Register first librarian
+POST {{baseUrl}}/auth/register-librarian
+Content-Type: application/json
+
+{
+  "name": "Library Admin",
+  "email": "librarian@example.com",
+  "phone_number": "555-0202",
+  "password": "admin123"
+}
+
+### Login
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "ayesha@example.com",
+  "password": "secret123"
+}
+
+### List books - authorized
+GET {{baseUrl}}/books
 Accept: application/json
+Authorization: Bearer {{token}}
 
-###
+### Search books - authorized
+GET {{baseUrl}}/books/search?query=clean
+Accept: application/json
+Authorization: Bearer {{token}}
+
+### Add book - librarian only
+POST {{baseUrl}}/books
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "title": "Clean Architecture",
+  "author": "Robert C. Martin",
+  "category": "Software",
+  "price": 34.50,
+  "publish_year": 2017,
+  "stock": 2
+}
+
+### Update book - librarian only
+PATCH {{baseUrl}}/books/1
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "stock": 5
+}
+
+### Delete book - librarian only
+DELETE {{baseUrl}}/books/1
+Authorization: Bearer {{token}}
+
+### Loan book - authorized
+POST {{baseUrl}}/loans
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "book_id": 1,
+  "days": 14
+}
+
+### List my loans - authorized
+GET {{baseUrl}}/loans
+Accept: application/json
+Authorization: Bearer {{token}}
+
+### Return loan - authorized
+POST {{baseUrl}}/loans/1/return
+Authorization: Bearer {{token}}
