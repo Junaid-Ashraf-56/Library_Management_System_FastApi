@@ -1,17 +1,13 @@
-from logging.config import fileConfig
 import os
+from logging.config import fileConfig
 
+from alembic import context
 from dotenv import load_dotenv
+from sqlalchemy import engine_from_config, pool
 
 load_dotenv(".env")
 
-from sqlalchemy import engine_from_config, pool
-from alembic import context
-
-from backend.app.repository.database import Base
-from backend.app.model.book import Book
-from backend.app.model.user import User
-from backend.app.model.loan import Loan
+from backend.app.repository.database import Base  # noqa: E402
 
 config = context.config
 
