@@ -1,6 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 
-from app.auth.jwt_auth import get_current_user, get_optional_current_user
+from app.auth.jwt_auth import (
+    get_current_librarian,
+    get_current_user,
+    get_optional_current_user,
+)
 from app.model.enums import UserRole
 from app.model.user import User
 from app.schemas import (
@@ -17,17 +21,6 @@ from app.schemas import (
 from app.service import library_service
 
 router = APIRouter()
-
-
-def require_librarian(current_user: User = Depends(get_current_user)) -> User:
-    if current_user.role != UserRole.LIBRARIAN:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Librarian privileges required",
-        )
-
-    return current_user
-
 
 @router.post(
     "/auth/register",
@@ -81,6 +74,28 @@ def login_user(credentials: LoginRequest):
     )
 
 
+@router.post(
+    "/auth/librarian/login",
+    response_model=TokenResponse,
+    tags=["Auth"],
+)
+def login_librarian(credentials: LoginRequest):
+    return library_service.login_user(
+        email=credentials.email,
+        password=credentials.password,
+        required_role=UserRole.LIBRARIAN,
+    )
+
+
+@router.get(
+    "/auth/me",
+    response_model=UserRead,
+    tags=["Auth"],
+)
+def get_me(current_user: User = Depends(get_current_user)):
+    return current_user
+
+
 @router.get(
     "/books",
     response_model=list[BookRead],
@@ -116,6 +131,7 @@ def get_book(book_id: int):
 )
 def add_book(
     book_data: BookCreate,
+    _current_librarian: User = Depends(get_current_librarian),
 ):
     return library_service.add_book(
         title=book_data.title,
@@ -135,6 +151,7 @@ def add_book(
 def update_book(
     book_id: int,
     book_data: BookUpdate,
+    _current_librarian: User = Depends(get_current_librarian),
 ):
     return library_service.update_book(
         book_id,
@@ -149,6 +166,7 @@ def update_book(
 )
 def remove_book(
     book_id: int,
+    _current_librarian: User = Depends(get_current_librarian),
 ):
     library_service.remove_book(book_id)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
