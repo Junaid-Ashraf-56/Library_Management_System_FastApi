@@ -59,6 +59,10 @@ async function request(path, options = {}) {
 }
 
 export const api = {
+  assetUrl(path) {
+    if (!path || /^https?:\/\//.test(path)) return path;
+    return `${API_BASE_URL}${path.startsWith("/") ? path : `/${path}`}`;
+  },
   login(email, password) {
     return request("/auth/login", {
       method: "POST",
@@ -119,5 +123,8 @@ export const api = {
     return request(`/loans/${loanId}/return`, {
       method: "POST",
     });
+  },
+  getJobStatus(jobId) {
+    return request(`/jobs/${encodeURIComponent(jobId)}`);
   },
 };

@@ -1,3 +1,4 @@
+from celery.result import AsyncResult
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 
 from app.auth.jwt_auth import (
@@ -11,14 +12,19 @@ from app.schemas import (
     BookCreate,
     BookRead,
     BookUpdate,
+    BorrowLoanResponse,
+    JobStatusResponse,
     LoanCreate,
     LoanRead,
     LoginRequest,
+    ReturnLoanResponse,
     TokenResponse,
     UserCreate,
     UserRead,
 )
+from app.core.celery_app import celery_app
 from app.service import library_service
+from app.tasks.receipt_tasks import generate_borrow_receipt
 
 router = APIRouter()
 
@@ -174,7 +180,7 @@ def remove_book(
 
 @router.post(
     "/loans",
-    response_model=LoanRead,
+    response_model=BorrowLoanResponse,
     status_code=status.HTTP_201_CREATED,
     tags=["Loans"],
 )
@@ -197,12 +203,19 @@ def loan_book(
         member_id=member_id,
         days=loan_data.days,
     )
-    # trigger event for the notification and the report here
-    return book_loan
+    loan_snapshot = LoanRead.model_validate(book_loan).model_dump(mode="json")
+    receipt_job = generate_borrow_receipt.delay(loan_snapshot)
+
+    return {
+        "loan": book_loan,
+        "job_id": receipt_job.id,
+        "message": "Receipt is being generated.",
+    }
+
 
 @router.post(
     "/loans/{loan_id}/return",
-    response_model=LoanRead,
+    response_model=ReturnLoanResponse,
     tags=["Loans"]
 )
 def return_book(
@@ -214,10 +227,52 @@ def return_book(
     if current_user.role != UserRole.LIBRARIAN:
         member_id = current_user.user_id
 
-    book_return =  library_service.return_book(loan_id, member_id=member_id)
+    book_return = library_service.return_book(loan_id, member_id=member_id)
 
-    # trigger event for the notification here
-    return book_return
+    return {
+        "loan": book_return,
+        "message": "Book returned successfully.",
+    }
+
+
+@router.get(
+    "/jobs/{job_id}",
+    response_model=JobStatusResponse,
+    tags=["Jobs"],
+)
+def get_job_status(
+    job_id: str,
+    _current_user: User = Depends(get_current_user),
+):
+    job = AsyncResult(job_id, app=celery_app)
+
+    if job.successful():
+        result = job.result if isinstance(job.result, dict) else {}
+        return {
+            "job_id": job_id,
+            "task_status": job.status,
+            "message": result.get("message", "Receipt generated successfully."),
+            "pdf_download_url": result.get("pdf_download_url"),
+        }
+
+    if job.failed():
+        return {
+            "job_id": job_id,
+            "task_status": job.status,
+            "message": "Receipt generation failed.",
+        }
+
+    messages = {
+        "PENDING": "Receipt job is waiting to start.",
+        "STARTED": "Receipt is being generated.",
+        "RETRY": "Receipt generation is being retried.",
+    }
+    return {
+        "job_id": job_id,
+        "task_status": job.status,
+        "message": messages.get(job.status, "Receipt job is in progress."),
+    }
+
 
 @router.get(
     "/loans",

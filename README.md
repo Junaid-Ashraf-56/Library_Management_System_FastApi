@@ -12,6 +12,7 @@ A command-line Library Management System backed by PostgreSQL running in Docker.
 - Separate member and librarian sign-in flows.
 - Librarian-only dashboard for adding, editing, and deleting catalog books.
 - Server-side role checks protecting every catalog mutation.
+- Redis-backed Celery jobs that generate PDF receipts after loans commit.
 
 ## Run Locally
 
@@ -24,6 +25,10 @@ docker compose up -d --build
 The frontend is available at `http://localhost:3000` by default and proxies API
 requests to the FastAPI container. Set `FRONTEND_PORT` in `.env` to expose it on
 a different host port.
+
+Compose also starts Redis and a Celery worker. Generated receipts are shared
+between the API and worker through the `generated_files` volume and are served
+from `/generated/receipts/...`.
 
 The first librarian can be created with `POST /auth/register-librarian`. After
 one librarian exists, that endpoint requires an existing librarian bearer token.
@@ -78,6 +83,18 @@ From the host, use:
 ```text
 postgresql://library_user:12345678@localhost:5433/library_management_fast_api
 ```
+
+For host-based development, start Redis and point both processes at it:
+
+```bash
+export CELERY_BROKER_URL=redis://localhost:6379/0
+export CELERY_RESULT_BACKEND=redis://localhost:6379/1
+uv run celery -A app.core.celery_app.celery_app worker --loglevel=info
+```
+
+The API enqueues receipt generation only after the loan service has committed.
+Clients can poll `GET /jobs/{job_id}` with their bearer token until the returned
+`task_status` is `SUCCESS`, then use `pdf_download_url` to fetch the PDF.
 
 ## Verification
 
