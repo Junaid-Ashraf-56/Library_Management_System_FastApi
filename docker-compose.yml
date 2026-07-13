@@ -42,7 +42,38 @@ services:
       retries: 10
     restart: unless-stopped
 
+  celery_worker:
+    build: .
+    container_name: library_celery_worker
+    command: uv run celery -A backend.app.core.celery_app.celery_app worker --loglevel=info
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      SECRET_KEY: ${SECRET_KEY}
+      CELERY_BROKER_URL: ${CELERY_BROKER_URL}
+      CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: library_redis
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD","redis-cli","ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+
 volumes:
   postgres_data:
-
-
+  redis_data:
