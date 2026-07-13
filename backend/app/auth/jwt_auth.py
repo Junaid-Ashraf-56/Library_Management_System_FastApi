@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.repository.database import get_db
 from app.model.user import User
+from app.model.enums import UserRole
 
 SECRET_KEY = os.getenv('SECRET_KEY')
 ALGORITHM = "HS256"
@@ -40,6 +41,18 @@ def get_optional_current_user(
         return None
 
     return _get_user_from_token(token, db)
+
+
+def get_current_librarian(
+    current_user: User = Depends(get_current_user),
+) -> User:
+    if current_user.role != UserRole.LIBRARIAN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Librarian access is required.",
+        )
+
+    return current_user
 
 
 def _get_user_from_token(token: str, db: Session) -> User:
