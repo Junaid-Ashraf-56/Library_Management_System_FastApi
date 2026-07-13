@@ -192,12 +192,13 @@ def loan_book(
             )
         member_id = loan_data.member_id
 
-    return library_service.loan_book(
+    book_loan = library_service.loan_book(
         book_id=loan_data.book_id,
         member_id=member_id,
         days=loan_data.days,
     )
-
+    # trigger event for the notification and the report here
+    return book_loan
 
 @router.post(
     "/loans/{loan_id}/return",
@@ -213,8 +214,10 @@ def return_book(
     if current_user.role != UserRole.LIBRARIAN:
         member_id = current_user.user_id
 
-    return library_service.return_book(loan_id, member_id=member_id)
+    book_return =  library_service.return_book(loan_id, member_id=member_id)
 
+    # trigger event for the notification here
+    return book_return
 
 @router.get(
     "/loans",
