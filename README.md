@@ -9,8 +9,26 @@ A command-line Library Management System backed by PostgreSQL running in Docker.
 - Record book loans and returns with stock updates.
 - Persist all books, members, and loan history in PostgreSQL.
 - Run lint and PostgreSQL integration tests in GitHub Actions.
+- Separate member and librarian sign-in flows.
+- Librarian-only dashboard for adding, editing, and deleting catalog books.
+- Server-side role checks protecting every catalog mutation.
 
 ## Run Locally
+
+Start the complete web application:
+
+```bash
+docker compose up -d --build
+```
+
+The frontend is available at `http://localhost:3000` by default and proxies API
+requests to the FastAPI container. Set `FRONTEND_PORT` in `.env` to expose it on
+a different host port.
+
+The first librarian can be created with `POST /auth/register-librarian`. After
+one librarian exists, that endpoint requires an existing librarian bearer token.
+Librarians sign in at `http://localhost:3000/librarian/login`; members use
+`http://localhost:3000/login`.
 
 Start PostgreSQL:
 
