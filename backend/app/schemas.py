@@ -77,3 +77,5 @@ class LoanRead(BaseModel):
     due_date: datetime
     returned_at: datetime | None
     status: LoanStatus
+    book: BookRead
+    member: UserRead

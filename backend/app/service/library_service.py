@@ -150,7 +150,7 @@ def update_book(book_id: int, **book_data):
     finally:
         db.close()
 
-def login_user(*, email: str, password: str):
+def login_user(*, email: str, password: str, required_role: UserRole | None = None):
     db = SessionLocal()
     try:
         user = repository.get_user_by_email(db, email)
@@ -160,6 +160,12 @@ def login_user(*, email: str, password: str):
 
         if not password_auth.verify_password(password, user.password):
             raise HTTPException(status_code=401, detail="Invalid credentials")
+
+        if required_role is not None and user.role != required_role:
+            raise HTTPException(
+                status_code=403,
+                detail="This account does not have librarian access.",
+            )
 
         access_token = create_access_token({
             "sub": str(user.user_id),
@@ -296,7 +302,7 @@ def loan_book(
         db.commit()
         db.refresh(loan)
 
-        return loan
+        return _serialize_loan(loan)
 
     except Exception:
         db.rollback()
@@ -334,7 +340,7 @@ def return_book(loan_id: int, *, member_id: int | None = None):
         db.commit()
         db.refresh(returned_loan)
 
-        return returned_loan
+        return _serialize_loan(returned_loan)
 
     except Exception:
         db.rollback()
@@ -347,6 +353,21 @@ def return_book(loan_id: int, *, member_id: int | None = None):
 def list_loans(*, active_only: bool = False, member_id: int | None = None):
     db = SessionLocal()
     try:
-        return repository.list_loans(db, active_only=active_only, member_id=member_id)
+        loans = repository.list_loans(db, active_only=active_only, member_id=member_id)
+        return [_serialize_loan(loan) for loan in loans]
     finally:
         db.close()
+
+
+def _serialize_loan(loan):
+    return {
+        "loan_id": loan.loan_id,
+        "book_id": loan.book_id,
+        "member_id": loan.member_id,
+        "issue_date": loan.issue_date,
+        "due_date": loan.due_date,
+        "returned_at": loan.returned_at,
+        "status": loan.status,
+        "book": loan.book,
+        "member": loan.member,
+    }
