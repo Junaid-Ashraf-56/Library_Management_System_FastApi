@@ -13,6 +13,12 @@ build/
 dist/
 generated/
 
+# JavaScript
+node_modules/
+
+# Editor backups
+*.bkp
+
 # IDE
 .vscode/
 .idea/
