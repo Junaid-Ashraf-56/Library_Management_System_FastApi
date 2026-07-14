@@ -38,7 +38,6 @@ def _draw_field(pdf: canvas.Canvas, label: str, value: str, y: float) -> float:
     retry_kwargs={"max_retries": 3},
 )
 def generate_borrow_receipt(self, loan: dict) -> dict[str, str]:
-    """Generate a receipt from the committed loan snapshot."""
     RECEIPTS_DIR.mkdir(parents=True, exist_ok=True)
 
     task_id = self.request.id or str(uuid4())

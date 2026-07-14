@@ -14,7 +14,7 @@ export function AppLayout() {
       <header className="topbar">
         <Link className="brand" to="/" onClick={close}>
           <span className="brand-mark"><Library size={20} /></span>
-          <span>LibraCore</span>
+          <span>Library</span>
         </Link>
 
         <button
