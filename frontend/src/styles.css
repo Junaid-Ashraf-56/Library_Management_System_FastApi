@@ -96,7 +96,10 @@ a { color: var(--primary); }
 .card-title-row h3 { margin-bottom: 5px; }
 .meta-grid { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 14px; }
 .meta-grid span { display: flex; align-items: center; gap: 4px; padding: 3px 6px; background: #f3f3f3; color: #555; border: 1px solid #ddd; font-size: 12px; }
-.book-card > .button { margin: 0 15px 15px; }
+.book-card > .button {
+  width: auto;
+  margin: 0 15px 15px;
+}
 
 .badge { display: inline-block; padding: 3px 7px; border: 1px solid; font-size: 12px; white-space: nowrap; }
 .badge-success { color: #246441; background: #edf7f0; border-color: #a8cbb4; }

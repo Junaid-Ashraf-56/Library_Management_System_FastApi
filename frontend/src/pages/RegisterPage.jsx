@@ -39,13 +39,13 @@ export function RegisterPage() {
         </div>
 
         <label>Full name
-          <input id="reg-name" value={form.name} onChange={set("name")} required placeholder="Jane Doe" />
+          <input id="reg-name" value={form.name} onChange={set("name")} required placeholder="Your Name" />
         </label>
         <label>Email address
           <input id="reg-email" type="email" value={form.email} onChange={set("email")} required placeholder="you@example.com" />
         </label>
         <label>Phone number
-          <input id="reg-phone" value={form.phone_number} onChange={set("phone_number")} required placeholder="+1 555 000 0000" />
+          <input id="reg-phone" value={form.phone_number} onChange={set("phone_number")} required placeholder="Your Phone Number" />
         </label>
         <label>Password
           <input id="reg-password" type="password" value={form.password} onChange={set("password")} required minLength={6} placeholder="Min. 6 characters" />
