@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { ClipboardList } from "lucide-react";
+import { useLocation } from "react-router-dom";
 import { api } from "../api/client.js";
 import { useAuth } from "../state/AuthContext.jsx";
 import { useToast } from "../state/ToastContext.jsx";
@@ -10,11 +11,13 @@ import { formatDate, isOverdue } from "../utils/format.js";
 export function LoansPage() {
   const { isLibrarian } = useAuth();
   const { showToast } = useToast();
+  const location = useLocation();
   const [loans, setLoans] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [activeOnly, setActiveOnly] = useState(false);
   const [returning, setReturning] = useState(null);
+  const [receiptJob, setReceiptJob] = useState(null);
 
   async function loadLoans(active = activeOnly) {
     setLoading(true);
@@ -30,6 +33,43 @@ export function LoansPage() {
 
   useEffect(() => { loadLoans(false); }, []);
 
+  useEffect(() => {
+    const jobId = location.state?.receiptJobId;
+    if (!jobId) return undefined;
+
+    let cancelled = false;
+    let timerId;
+
+    async function pollReceipt() {
+      try {
+        const result = await api.getReceiptJobStatus(jobId);
+        if (cancelled) return;
+
+        setReceiptJob(result);
+        if (result.task_status === "SUCCESS") {
+          showToast(result.message, "success");
+          return;
+        }
+        if (result.task_status === "FAILURE") {
+          showToast(result.message, "error");
+          return;
+        }
+
+        timerId = window.setTimeout(pollReceipt, 1500);
+      } catch (err) {
+        if (!cancelled) {
+          showToast(err.message || "Unable to check receipt status", "error");
+        }
+      }
+    }
+
+    pollReceipt();
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timerId);
+    };
+  }, [location.state?.receiptJobId, showToast]);
+
   function toggleFilter(active) {
     setActiveOnly(active);
     loadLoans(active);
@@ -38,8 +78,8 @@ export function LoansPage() {
   async function handleReturn(loanId) {
     setReturning(loanId);
     try {
-      await api.returnLoan(loanId);
-      showToast("Book returned successfully!", "success");
+      const result = await api.returnLoan(loanId);
+      showToast(result.message, "success");
       loadLoans(activeOnly);
     } catch (err) {
       showToast(err.message || "Unable to return book", "error");
@@ -68,6 +108,22 @@ export function LoansPage() {
           Active only
         </button>
       </div>
+
+      {receiptJob && (
+        <div className="borrow-panel">
+          <span>{receiptJob.message}</span>
+          {receiptJob.pdf_download_url && (
+            <a
+              className="button compact"
+              href={api.assetUrl(receiptJob.pdf_download_url)}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Download receipt
+            </a>
+          )}
+        </div>
+      )}
 
       {error && <ErrorState message={error} onRetry={() => loadLoans()} />}
       {!error && loans.length === 0 && (

@@ -7,7 +7,8 @@ from sqlalchemy import engine_from_config, pool
 
 load_dotenv(".env")
 
-from backend.app.repository.database import Base  # noqa: E402
+from app.model import book, loan, user  # noqa: E402, F401
+from app.repository.database import Base  # noqa: E402
 
 config = context.config
 

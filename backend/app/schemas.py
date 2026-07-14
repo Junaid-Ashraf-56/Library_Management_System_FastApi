@@ -79,3 +79,21 @@ class LoanRead(BaseModel):
     status: LoanStatus
     book: BookRead
     member: UserRead
+
+
+class BorrowLoanResponse(BaseModel):
+    loan: LoanRead
+    job_id: str
+    message: str
+
+
+class ReturnLoanResponse(BaseModel):
+    loan: LoanRead
+    message: str
+
+
+class JobStatusResponse(BaseModel):
+    job_id: str
+    task_status: str
+    message: str
+    pdf_download_url: str | None = None

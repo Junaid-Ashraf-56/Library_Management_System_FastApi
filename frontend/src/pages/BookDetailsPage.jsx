@@ -42,9 +42,9 @@ export function BookDetailsPage() {
     }
     setBorrowing(true);
     try {
-      await api.createLoan(book.book_id, days);
-      showToast("Book borrowed successfully!", "success");
-      navigate("/loans");
+      const result = await api.createLoan(book.book_id, days);
+      showToast(result.message, "info");
+      navigate("/loans", { state: { receiptJobId: result.job_id } });
     } catch (err) {
       showToast(err.message || "Unable to borrow book", "error");
     } finally {

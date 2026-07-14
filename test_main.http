@@ -91,3 +91,8 @@ Authorization: Bearer {{token}}
 ### Return loan - authorized
 POST {{baseUrl}}/loans/1/return
 Authorization: Bearer {{token}}
+
+### Check receipt job (use job_id returned by POST /loans)
+GET {{baseUrl}}/loans/receipt-jobs/paste-job-id-here
+Accept: application/json
+Authorization: Bearer {{token}}

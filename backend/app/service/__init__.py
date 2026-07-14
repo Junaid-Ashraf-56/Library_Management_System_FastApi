@@ -1,13 +1,7 @@
 """Business service package."""
 
+from app.exceptions import DomainError, NotFoundError, ValidationError
 
-class LibraryError(Exception):
-    pass
+LibraryError = DomainError
 
-
-class NotFoundError(LibraryError):
-    pass
-
-
-class ValidationError(LibraryError):
-    pass
+__all__ = ["LibraryError", "NotFoundError", "ValidationError"]

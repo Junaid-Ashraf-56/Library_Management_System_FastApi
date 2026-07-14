@@ -33,6 +33,7 @@ def test_existing_api_paths_are_preserved():
         "/books/search",
         "/books/{book_id}",
         "/loans",
+        "/loans/receipt-jobs/{job_id}",
         "/loans/{loan_id}/return",
     }
 

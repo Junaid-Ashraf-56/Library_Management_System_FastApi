@@ -19,10 +19,26 @@ services:
     environment:
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       SECRET_KEY: ${SECRET_KEY:?Set SECRET_KEY to a non-empty value in .env}
+      CELERY_BROKER_URL: ${CELERY_BROKER_URL:-redis://redis:6379/0}
+      CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND:-redis://redis:6379/1}
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    volumes:
+      - generated_files:/app/generated
+    restart: unless-stopped
+
+  migrate:
+    build: .
+    command: uv run alembic upgrade head
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
     depends_on:
       postgres:
         condition: service_healthy
-    restart: unless-stopped
+    restart: "no"
 
   postgres:
     image: postgres:17
@@ -45,18 +61,17 @@ services:
   celery_worker:
     build: .
     container_name: library_celery_worker
-    command: uv run celery -A backend.app.core.celery_app.celery_app worker --loglevel=info
+    command: uv run celery -A app.core.celery_app.celery_app worker --loglevel=info
     environment:
-      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
-      SECRET_KEY: ${SECRET_KEY:?Set SECRET_KEY to a non-empty value in .env}
-      CELERY_BROKER_URL: ${CELERY_BROKER_URL}
-      CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND}
+      CELERY_BROKER_URL: ${CELERY_BROKER_URL:-redis://redis:6379/0}
+      CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND:-redis://redis:6379/1}
     depends_on:
-      postgres:
-        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
       redis:
         condition: service_healthy
-
+    volumes:
+      - generated_files:/app/generated
     restart: unless-stopped
 
   redis:
@@ -73,7 +88,7 @@ services:
       retries: 10
     restart: unless-stopped
 
-#hello
 volumes:
   postgres_data:
   redis_data:
+  generated_files:

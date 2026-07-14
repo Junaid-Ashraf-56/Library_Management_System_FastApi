@@ -1,8 +1,8 @@
-from fastapi import HTTPException
 from sqlalchemy.exc import IntegrityError
 
 from app.auth import password as password_auth
 from app.auth.jwt_auth import create_access_token
+from app.exceptions import AuthenticationError, AuthorizationError, ConflictError
 from app.model.enums import UserRole
 from app.repository import user_repository
 from app.repository.database import SessionLocal
@@ -13,13 +13,10 @@ def login_user(*, email: str, password: str, required_role: UserRole | None = No
     try:
         user = user_repository.get_user_by_email(db, email)
         if user is None or not password_auth.verify_password(password, user.password):
-            raise HTTPException(status_code=401, detail="Invalid credentials")
+            raise AuthenticationError("Invalid credentials")
 
         if required_role is not None and user.role != required_role:
-            raise HTTPException(
-                status_code=403,
-                detail="This account does not have librarian access.",
-            )
+            raise AuthorizationError("This account does not have librarian access.")
 
         access_token = create_access_token(
             {"sub": str(user.user_id), "role": user.role.value}
@@ -84,10 +81,7 @@ def _register_user(
         return user
     except IntegrityError as exc:
         db.rollback()
-        raise HTTPException(
-            status_code=409,
-            detail=f"A user already uses {email}.",
-        ) from exc
+        raise ConflictError(f"A user already uses {email}.") from exc
     except Exception:
         db.rollback()
         raise

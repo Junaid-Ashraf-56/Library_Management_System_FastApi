@@ -1,35 +1,25 @@
 from datetime import UTC, datetime, timedelta
 
-from fastapi import HTTPException
-
+from app.exceptions import AuthorizationError, NotFoundError, ValidationError
 from app.repository import book_repository, loan_repository, user_repository
 from app.repository.database import SessionLocal
 
 
 def loan_book(*, book_id: int, member_id: int, days: int):
     if days < 1:
-        raise HTTPException(status_code=400, detail="Loan length must be at least one day.")
+        raise ValidationError("Loan length must be at least one day.")
 
     db = SessionLocal()
     try:
         book = book_repository.get_book_for_update(db, book_id)
         if book is None:
-            raise HTTPException(
-                status_code=404,
-                detail=f"No book exists with id {book_id}.",
-            )
+            raise NotFoundError(f"No book exists with id {book_id}.")
         if book.stock <= 0:
-            raise HTTPException(
-                status_code=404,
-                detail=f"'{book.title}' is currently out of stock.",
-            )
+            raise NotFoundError(f"'{book.title}' is currently out of stock.")
 
         member = user_repository.get_member(db, member_id)
         if member is None:
-            raise HTTPException(
-                status_code=404,
-                detail=f"No user exists with id {member_id}.",
-            )
+            raise NotFoundError(f"No user exists with id {member_id}.")
 
         due_date = datetime.now(UTC) + timedelta(days=days)
         book_repository.decrease_stock(db, book_id)
@@ -55,15 +45,9 @@ def return_book(loan_id: int, *, member_id: int | None = None):
     try:
         loan = loan_repository.get_active_loan_for_update(db, loan_id)
         if loan is None:
-            raise HTTPException(
-                status_code=404,
-                detail=f"No active loan exists with id {loan_id}.",
-            )
+            raise NotFoundError(f"No active loan exists with id {loan_id}.")
         if member_id is not None and loan.member_id != member_id:
-            raise HTTPException(
-                status_code=403,
-                detail="You can only return your own loans.",
-            )
+            raise AuthorizationError("You can only return your own loans.")
 
         returned_loan = loan_repository.mark_loan_returned(
             db,
