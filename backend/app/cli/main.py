@@ -5,8 +5,7 @@ from decimal import Decimal, InvalidOperation
 from typing import Any
 
 from app.repository.database import init_db
-from app.service import library_service as service
-from app.service.library_service import LibraryError
+from app.service import LibraryError, book_service, loan_service, user_service
 
 
 def _input_decimal(prompt: str) -> Decimal:
@@ -92,7 +91,7 @@ def add_book_menu() -> None:
     publish_year = _input_int("Enter publish year: ")
     stock = _input_int("Enter stock: ")
 
-    book = service.add_book(
+    book = book_service.add_book(
         title=title,
         author=author,
         category=category,
@@ -106,17 +105,17 @@ def add_book_menu() -> None:
 
 
 def list_books_menu() -> None:
-    _print_rows(service.list_books())
+    _print_rows(book_service.list_books())
 
 
 def search_books_menu() -> None:
     query = input("Enter search keyword: ").strip()
-    _print_rows(service.search_books(query))
+    _print_rows(book_service.search_books(query))
 
 
 def remove_book_menu() -> None:
     book_id = _input_int("Enter book id: ")
-    service.remove_book(book_id)
+    book_service.remove_book(book_id)
     print(f"\nBook {book_id} removed successfully.\n")
 
 
@@ -126,7 +125,7 @@ def register_member_menu() -> None:
     phone = input("Enter phone number: ").strip()
     password = input("Enter password: ").strip()
 
-    member = service.register_user(
+    member = user_service.register_user(
         name=name,
         email=email,
         phone_number=phone,
@@ -142,7 +141,7 @@ def loan_book_menu() -> None:
     member_id = _input_int("Enter member id: ")
     days = _input_int("Enter loan days: ")
 
-    loan = service.loan_book(
+    loan = loan_service.loan_book(
         book_id=book_id,
         member_id=member_id,
         days=days,
@@ -155,14 +154,14 @@ def loan_book_menu() -> None:
 def return_book_menu() -> None:
     loan_id = _input_int("Enter loan id: ")
 
-    loan = service.return_book(loan_id)
+    loan = loan_service.return_book(loan_id)
 
     print("\nBook returned successfully.")
     _print_rows([loan])
 
 
 def list_loans_menu(active_only: bool = False) -> None:
-    _print_rows(service.list_loans(active_only=active_only))
+    _print_rows(loan_service.list_loans(active_only=active_only))
 
 
 def main() -> int:

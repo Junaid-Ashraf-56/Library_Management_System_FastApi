@@ -1,7 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routes.library_routes import router as library_router
+from app.routes.book_routes import router as book_router
+from app.routes.loan_routes import router as loan_router
+from app.routes.user_routes import router as user_router
 
 app = FastAPI()
 
@@ -16,7 +18,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(library_router)
+app.include_router(user_router)
+app.include_router(book_router)
+app.include_router(loan_router)
 
 
 @app.get("/")
