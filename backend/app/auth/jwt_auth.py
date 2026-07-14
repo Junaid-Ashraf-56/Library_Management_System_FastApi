@@ -10,7 +10,13 @@ from app.repository.database import get_db
 from app.model.user import User
 from app.model.enums import UserRole
 
-SECRET_KEY = os.getenv('SECRET_KEY')
+SECRET_KEY = os.getenv("SECRET_KEY", "").strip()
+
+if not SECRET_KEY:
+    raise RuntimeError(
+        "SECRET_KEY must be set to a non-empty value before starting the API."
+    )
+
 ALGORITHM = "HS256"
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 optional_oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login", auto_error=False)
@@ -18,7 +24,7 @@ optional_oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login", auto_error
 def create_access_token(data: dict):
     payload = data.copy()
     payload['exp'] = datetime.now(UTC)+timedelta(minutes=30)
-    return jwt.encode(payload,SECRET_KEY,algorithm=ALGORITHM)
+    return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
 
 def verify_tokens(token: str):
     try:

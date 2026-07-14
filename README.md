@@ -67,6 +67,20 @@ uv run library remove-book 1
 Copy `.env.example` to `.env` for Docker Compose defaults. If you run the CLI
 against another database, set `DATABASE_URL`.
 
+Set a non-empty `SECRET_KEY` in `.env` before starting the application. It is
+used to sign login tokens and can be generated with:
+
+```bash
+openssl rand -hex 32
+```
+
+For example, copy the generated value into `.env` as `SECRET_KEY=<value>`.
+After changing it, recreate the API container so the new environment is loaded:
+
+```bash
+docker compose up -d --build --force-recreate api
+```
+
 Inside Docker, `DATABASE_URL` should use the service host:
 
 ```text
